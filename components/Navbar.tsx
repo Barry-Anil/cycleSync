@@ -29,7 +29,7 @@ const Navbar = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </Link>
-            <div className="ml-4 text-xl font-semibold text-gray-800">Modern App</div>
+            <div className="ml-4 text-xl font-semibold text-gray-800">CycleSync</div>
           </div>
           <div className="flex items-center">
             <DropdownMenu>

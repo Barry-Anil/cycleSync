@@ -5,10 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { toast } from "sonner"
 
-export const MedicationLog = ({ onComplete }: { onComplete: () => void }) => {
+interface MedicationLog {
+  onComplete: () => void
+  cycleEntryId?: any // Added to link with cycle entry
+  session: any
+}
+
+export const MedicationLog = ({ onComplete, cycleEntryId, session }: MedicationLog) => {
   const [medications, setMedications] = useState<string[]>([]);
   const [newMedication, setNewMedication] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAddMedication = () => {
     if (newMedication.trim()) {
@@ -19,22 +27,57 @@ export const MedicationLog = ({ onComplete }: { onComplete: () => void }) => {
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch('/api/medications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          medications,
-        }),
+      if (!cycleEntryId) {
+        toast.error("No cycle entry found. Please complete the daily log first.");
+        return;
+      }
+
+      if (!session?.user?.email) {
+        toast.error("You must be logged in to save entries");
+        return;
+      }
+
+      if (medications.length === 0) {
+        toast.error("Please add at least one medication before submitting");
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      // Submit each medication individually
+      const submissionPromises = medications.map(async (medicationName) => {
+        const response = await fetch('/api/medications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            cycleEntryId,
+            name: medicationName,
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || data.details || 'Failed to submit medication');
+        }
+
+        return response.json();
       });
+
+      // Wait for all medications to be submitted
+      await Promise.all(submissionPromises);
       
-      if (!response.ok) throw new Error('Failed to submit medication log');
+      toast.success("Medications logged successfully");
       onComplete();
     } catch (error) {
-      console.error('Error submitting medication log:', error);
+      console.error('Error submitting medications:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to save medications");
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
 
   return (
     <>

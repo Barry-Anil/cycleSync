@@ -1,36 +1,73 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@radix-ui/react-dropdown-menu";
-import { useState } from "react";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label" // Fixed import
+import { useState } from "react"
+import { useSession } from "next-auth/react" // Added for user authentication
+import { toast } from "sonner" // For error notifications
 
-export const BowelMovementLog = ({ onComplete }: { onComplete: () => void }) => {
-  const [frequency, setFrequency] = useState<number>(0);
-  const [consistency, setConsistency] = useState("");
+interface BowelMovementLogProps {
+  onComplete: () => void
+  cycleEntryId?: any // Added to link with cycle entry
+  session: any
+}
+
+export const BowelMovementLog = ({ onComplete, cycleEntryId, session }: BowelMovementLogProps) => {
+  const [isLoading, setIsLoading] = useState(false)
+  const [frequency, setFrequency] = useState<number>(0)
+  const [consistency, setConsistency] = useState("")
+
+  console.log(session, "session bowel moment")
 
   const handleSubmit = async () => {
+    if (!session?.user?.email) {
+      toast.error("You must be logged in to save entries")
+      return
+    }
+    setIsLoading(true)
+
     try {
+      const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`)
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user information')
+      }
+      const userData = await userResponse.json()
+
+      const payload = {
+        userId: userData.id,
+        cycleEntryId,
+        frequency,
+        consistency,
+      }
+      console.log('Submitting payload:', payload)
+
       const response = await fetch('/api/bowel-movements', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          frequency,
-          consistency,
-        }),
-      });
+        body: JSON.stringify(payload),
+      })
       
-      if (!response.ok) throw new Error('Failed to submit bowel movement log');
-      onComplete();
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to submit bowel movement log')
+      }
+
+      const responseData = await response.json()
+
+      toast.success('Bowel movement log saved successfully')
+      onComplete()
     } catch (error) {
-      console.error('Error submitting bowel movement log:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save bowel movement log')
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
-    <>
-     <Card>
+    <Card>
       <CardHeader>
         <CardTitle>💩 Bowel Movement Log</CardTitle>
         <CardDescription>Record your bowel movement frequency and consistency</CardDescription>
@@ -45,7 +82,7 @@ export const BowelMovementLog = ({ onComplete }: { onComplete: () => void }) => 
             <SelectContent>
               {[0, 1, 2, 3, 4, 5].map((num) => (
                 <SelectItem key={num} value={num.toString()}>
-                  {num} times
+                  {num} time{num !== 1 ? 's' : ''}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -67,9 +104,13 @@ export const BowelMovementLog = ({ onComplete }: { onComplete: () => void }) => 
         </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={handleSubmit}>Save and Continue</Button>
+        <Button 
+          onClick={handleSubmit} 
+          disabled={isLoading}
+        >
+          {isLoading ? 'Saving...' : 'Save and Continue'}
+        </Button>
       </CardFooter>
-      </Card>
-    </>
-  );
-};
+    </Card>
+  )
+}

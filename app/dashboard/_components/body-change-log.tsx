@@ -4,8 +4,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from 'sonner';
 
-export const BodyChangeLog = ({ onComplete }: { onComplete: () => void }) => {
+interface BodyChanges {
+  onComplete: () => void
+  cycleEntryId?: any // Added to link with cycle entry
+  session: any
+}
+
+export const BodyChangeLog = ({onComplete, cycleEntryId, session}: BodyChanges) => {
   const [skinCondition, setSkinCondition] = useState("");
   const [hairCondition, setHairCondition] = useState("");
   const [gutHealth, setGutHealth] = useState("");
@@ -13,24 +20,46 @@ export const BodyChangeLog = ({ onComplete }: { onComplete: () => void }) => {
 
   const handleSubmit = async () => {
     try {
+      if (!cycleEntryId) {
+        toast.error('No cycle entry found. Please complete the daily log first.');
+        return;
+      }
+  
+      if (!session?.user?.email) {
+        toast.error('You must be logged in to save entries');
+        return;
+      }
+  
+      // Log the data we're about to send
+      const bodyChangeData = {
+        cycleEntryId,
+        skinCondition: skinCondition || null,
+        hairCondition: hairCondition || null,
+        gutHealth: gutHealth || null,
+        dietCravings: dietCravings || null,
+      };
+  
+      console.log('Submitting body changes:', bodyChangeData);
+  
       const response = await fetch('/api/body-changes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          userId: localStorage.getItem('userId'),
-          skinCondition,
-          hairCondition,
-          gutHealth,
-          dietCravings,
-        }),
+        body: JSON.stringify(bodyChangeData),
       });
-      
-      if (!response.ok) throw new Error('Failed to submit body changes');
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to submit body changes');
+      }
+  
+      toast.success('Body changes saved successfully');
       onComplete();
     } catch (error) {
       console.error('Error submitting body changes:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save body changes');
     }
   };
 

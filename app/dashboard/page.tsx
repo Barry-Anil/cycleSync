@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,7 @@ import { BodyChangeLog } from "./_components/body-change-log"
 import { BowelMovementLog } from "./_components/bowel-movement-log"
 import { CognitiveAssessment } from "./_components/cognitive-assessment"
 import { MedicationLog } from "./_components/medication-log"
+import { useSession } from "next-auth/react"
 
 interface CycleEntry {
   id: number
@@ -56,7 +57,7 @@ const sections = [
 
 export default function Dashboard() {
 
-
+  const { data: session } = useSession()
   const [isLoading, setIsLoading] = useState(false)
   const [startDate, setStartDate] = useState<Date>(new Date())
   const [endDate, setEndDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() + 6)))
@@ -71,14 +72,116 @@ export default function Dashboard() {
     }
   })
 
-
   const handleStartDateChange = (date: Date) => {
     setStartDate(date)
     setEndDate(new Date(new Date(date).setDate(date.getDate() + 6)))
   }
 
-  const onSubmit = async (formData: DailyLogForm) => {
+  const fetchEntries = async () => {
+    try {
+      if (!session?.user?.email) {
+        return;
+      }
 
+      setIsLoading(true);
+
+      // First, get the user ID using the email
+      const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`);
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user information');
+      }
+      const userData = await userResponse.json();
+
+      // Then fetch the entries
+      const response = await fetch(`/api/cycle-entries?userId=${userData.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch entries');
+      }
+
+      const entries = await response.json();
+
+      // Validate entries to ensure it's an array
+      if (!Array.isArray(entries)) {
+        throw new Error('Entries response is not an array');
+      }
+
+      setCycleEntries(entries);
+
+      // Show toast if no entries found
+      if (entries.length === 0) {
+        toast("No entries found yet. Start by adding your first entry!");
+      }
+    } catch (error) {
+      console.error('Error fetching entries:', error);
+      toast.error('Failed to load entries');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  // Add this useEffect to fetch entries when the component mounts
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetchEntries();
+    }
+  }, [session?.user?.email]);
+
+  console.log(cycleEntries[0]?.id, "cycleEntries")
+
+  const onSubmit = async (formData: DailyLogForm) => {
+    try {
+      if (!session?.user?.email) {
+        toast.error('You must be logged in to save entries')
+        return
+      }
+
+      setIsLoading(true)
+
+      // First, get the user ID using the email
+      const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`)
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user information')
+      }
+      const userData = await userResponse.json()
+
+      // Log the data we're about to send
+      const entryData = {
+        userId: userData.id,
+        date: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        mood: formData.mood || null,
+        energy: formData.energy || null,
+        notes: formData.notes || null,
+      }
+      console.log('Submitting entry data:', entryData)
+
+      const response = await fetch('/api/cycle-entries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(entryData),
+      })
+
+
+      const responseData = await response.json()
+      setCycleEntries(responseData)
+      console.log('Response data:', responseData)
+
+      if (!response.ok) {
+        throw new Error(responseData.error || responseData.details || 'Failed to save entry')
+      }
+
+      toast.success('Entry saved successfully')
+      nextSection()
+
+    } catch (error) {
+      console.error('Error saving entry:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to save entry')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const nextSection = () => {
@@ -129,8 +232,8 @@ export default function Dashboard() {
         </form>
       </CardContent>
       <CardFooter>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           form="dailyLogForm"
           disabled={isLoading}
         >
@@ -145,13 +248,13 @@ export default function Dashboard() {
       case "daily-log":
         return renderDailyLog();
       case "body-changes":
-        return <BodyChangeLog onComplete={nextSection} />;
+        return <BodyChangeLog onComplete={nextSection} cycleEntryId={cycleEntries[0]?.id} session={session} />;
       case "bowel-movement":
-        return <BowelMovementLog onComplete={nextSection} />;
+        return <BowelMovementLog onComplete={nextSection} cycleEntryId={cycleEntries[0]?.id} session={session} />;
       case "cognitive":
-        return <CognitiveAssessment onComplete={nextSection} />;
+        return <CognitiveAssessment onComplete={nextSection} cycleEntryId={cycleEntries[0]?.id} session={session} />;
       case "medication":
-        return <MedicationLog onComplete={nextSection} />;
+        return <MedicationLog onComplete={nextSection} cycleEntryId={cycleEntries[0]?.id} session={session} />;
     }
   }
 
@@ -197,16 +300,20 @@ export default function Dashboard() {
             <Breadcrumb>
               <BreadcrumbList>
                 {sections.map((section, index) => (
-                  <BreadcrumbItem key={section.id}>
-                    {index > 0 && <BreadcrumbSeparator />}
-                    {section.id === currentSection ? (
-                      <BreadcrumbPage>{section.emoji} {section.title}</BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink onClick={() => setCurrentSection(section.id)}>
-                        {section.emoji} {section.title}
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
+                  <React.Fragment key={section.id}>
+                    {index > 0 && <BreadcrumbSeparator />} {/* Separator between items */}
+                    <BreadcrumbItem>
+                      {section.id === currentSection ? (
+                        <BreadcrumbPage>
+                          {section.emoji} {section.title}
+                        </BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink onClick={() => setCurrentSection(section.id)}>
+                          {section.emoji} {section.title}
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                  </React.Fragment>
                 ))}
               </BreadcrumbList>
             </Breadcrumb>
@@ -222,18 +329,21 @@ export default function Dashboard() {
         <CardContent>
           {isLoading ? (
             <div className="text-center py-4">Loading entries...</div>
-          ) : cycleEntries.length === 0 ? (
+          ) : !Array.isArray(cycleEntries) || cycleEntries.length === 0 ? (
             <div className="text-center py-4">No entries yet</div>
           ) : (
             <ul className="space-y-2">
-              {cycleEntries.slice(-5).reverse().map((entry) => (
-                <li key={entry.id} className="bg-secondary p-4 rounded">
-                  <p><strong>Date:</strong> {new Date(entry.date).toLocaleDateString()}</p>
-                  <p><strong>Mood:</strong> {entry.mood || 'Not recorded'}</p>
-                  <p><strong>Energy:</strong> {entry.energy || 'Not recorded'}</p>
-                  {entry.notes && <p><strong>Notes:</strong> {entry.notes}</p>}
-                </li>
-              ))}
+              {[...cycleEntries]
+                .slice(-5)
+                .reverse()
+                .map((entry: CycleEntry) => (
+                  <li key={entry.id} className="bg-secondary p-4 rounded">
+                    <p><strong>Date:</strong> {entry.date}</p>
+                    <p><strong>Mood:</strong> {entry.mood || 'Not recorded'}</p>
+                    <p><strong>Energy:</strong> {entry.energy || 'Not recorded'}</p>
+                    {entry.notes && <p><strong>Notes:</strong> {entry.notes}</p>}
+                  </li>
+                ))}
             </ul>
           )}
         </CardContent>

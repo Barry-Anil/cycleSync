@@ -3,28 +3,62 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+import { toast } from "sonner";
 
-export const CognitiveAssessment = ({ onComplete }: { onComplete: () => void }) => {
+interface CognitiveAssessment {
+  onComplete: () => void
+  cycleEntryId?: any // Added to link with cycle entry
+  session: any
+}
+
+export const CognitiveAssessment = ({ onComplete, cycleEntryId, session }: CognitiveAssessment) => {
   const [focus, setFocus] = useState("");
   const [memory, setMemory] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     try {
+      if (!cycleEntryId) {
+        toast.error('No cycle entry found. Please complete the daily log first.');
+        return;
+      }
+
+      if (!session?.user?.email) {
+        toast.error('You must be logged in to save entries');
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      const assessmentData = {
+        cycleEntryId,
+        focus: focus || null,
+        memory: memory || null,
+      };
+
+      console.log('Submitting cognitive assessment:', assessmentData);
+
       const response = await fetch('/api/cognitive-assessment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          focus,
-          memory,
-        }),
+        body: JSON.stringify(assessmentData),
       });
-      
-      if (!response.ok) throw new Error('Failed to submit cognitive assessment');
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to submit cognitive assessment');
+      }
+
+      toast.success('Cognitive assessment saved successfully');
       onComplete();
     } catch (error) {
       console.error('Error submitting cognitive assessment:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save cognitive assessment');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
