@@ -1,21 +1,61 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+ 
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 355 100% 98%;
+    --foreground: 355 50% 20%;
+    --card: 355 100% 99%;
+    --card-foreground: 355 50% 20%;
+    --popover: 355 100% 99%;
+    --popover-foreground: 355 50% 20%;
+    --primary: 355 80% 60%;
+    --primary-foreground: 355 100% 98%;
+    --secondary: 25 100% 85%;
+    --secondary-foreground: 355 50% 20%;
+    --muted: 355 50% 90%;
+    --muted-foreground: 355 50% 40%;
+    --accent: 25 100% 85%;
+    --accent-foreground: 355 50% 20%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 355 100% 98%;
+    --border: 355 50% 85%;
+    --input: 355 50% 85%;
+    --ring: 355 80% 60%;
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    --background: 355 50% 10%;
+    --foreground: 355 50% 90%;
+    --card: 355 50% 15%;
+    --card-foreground: 355 50% 90%;
+    --popover: 355 50% 15%;
+    --popover-foreground: 355 50% 90%;
+    --primary: 355 80% 60%;
+    --primary-foreground: 355 50% 10%;
+    --secondary: 25 50% 25%;
+    --secondary-foreground: 355 50% 90%;
+    --muted: 355 50% 20%;
+    --muted-foreground: 355 50% 70%;
+    --accent: 25 50% 25%;
+    --accent-foreground: 355 50% 90%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 355 50% 10%;
+    --border: 355 50% 30%;
+    --input: 355 50% 30%;
+    --ring: 355 80% 60%;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f9c6d0' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
