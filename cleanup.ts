@@ -8,7 +8,7 @@ async function cleanup() {
     await sql`
       DROP TABLE IF EXISTS 
         "account",
-        "sessions",
+        "session",
         "user",
         "verificationToken",
         "medications",

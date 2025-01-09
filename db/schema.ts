@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, date } from "drizzle-orm/pg-core";
 
 
 export const users = pgTable("user", {
@@ -47,7 +47,7 @@ export const cycleEntries = pgTable("cycle_entries", {
   id: text("id").primaryKey(),  // Changed from serial to text
   userId: text("user_id")       // Changed from integer to text
     .references(() => users.id),
-  date: timestamp("date").notNull(),
+  date: date("date").notNull(),
   endDate: timestamp("end_date").notNull(), 
   mood: text("mood"),
   energy: integer("energy"),

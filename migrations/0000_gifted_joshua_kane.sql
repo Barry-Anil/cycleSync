@@ -39,7 +39,7 @@ CREATE TABLE "cognitive_assessments" (
 CREATE TABLE "cycle_entries" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text,
-	"date" timestamp NOT NULL,
+	"date" date NOT NULL,
 	"end_date" timestamp NOT NULL,
 	"mood" text,
 	"energy" integer,
@@ -53,7 +53,7 @@ CREATE TABLE "medications" (
 );
 --> statement-breakpoint
 CREATE TABLE "session" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" text PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"userId" text NOT NULL,
 	"sessionToken" text NOT NULL,
 	"expires" timestamp NOT NULL,

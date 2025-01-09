@@ -20,7 +20,7 @@ const Navbar = () => {
   console.log(session, "sesssion")
 
   return (
-    <nav className="bg-gradient-to-b from-pink-50 to-white dark:from-pink-950 dark:to-background shadow-md">
+    <nav className="bg-gradient-to-b from-pink-450 to-white dark:from-pink-950 dark:to-background shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">

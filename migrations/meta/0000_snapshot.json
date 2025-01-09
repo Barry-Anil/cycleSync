@@ -1,5 +1,5 @@
 {
-  "id": "c30b6bca-20c3-4822-bbab-cf9f61475259",
+  "id": "bdc4b766-c7bc-40cf-9f0e-87c93b041249",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -287,7 +287,7 @@
         },
         "date": {
           "name": "date",
-          "type": "timestamp",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -391,7 +391,8 @@
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "userId": {
           "name": "userId",
