@@ -8,8 +8,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     
-    // Log incoming request
-    console.log('Received request body:', body)
 
     // Validate the incoming data
     if (!body.userId || !body.date || !body.endDate) {
@@ -28,21 +26,19 @@ export async function POST(request: Request) {
     const newEntry = {
       id: uuidv4(),
       userId: body.userId,
-      date: new Date(body.date), // Keep as Date object
+      date: new Date(body.date).toISOString(), // Keep as Date object
       endDate: new Date(body.endDate), // Keep as Date object
       mood: body.mood || null,
       energy: typeof body.energy === 'number' ? body.energy : null,
       notes: body.notes || null,
     }
 
-    console.log('Attempting to create entry:', newEntry)
 
     const result = await db
       .insert(cycleEntries)
       .values(newEntry)
       .returning()
 
-    console.log('Database operation result:', result)
 
     return NextResponse.json(
       {
