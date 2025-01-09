@@ -5,14 +5,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
+import { fetchCollectiveEntries } from '@/lib/fetchCollectiveEntries';
 
 interface BodyChanges {
   onComplete: () => void
   cycleEntryId?: any // Added to link with cycle entry
   session: any
+  setCycleEntries : (entries: any[]) => void;
 }
 
-export const BodyChangeLog = ({onComplete, cycleEntryId, session}: BodyChanges) => {
+export const BodyChangeLog = ({onComplete, cycleEntryId, session, setCycleEntries}: BodyChanges) => {
   const [skinCondition, setSkinCondition] = useState("");
   const [hairCondition, setHairCondition] = useState("");
   const [gutHealth, setGutHealth] = useState("");
@@ -30,7 +32,6 @@ export const BodyChangeLog = ({onComplete, cycleEntryId, session}: BodyChanges) 
         return;
       }
   
-      // Log the data we're about to send
       const bodyChangeData = {
         cycleEntryId,
         skinCondition: skinCondition || null,
@@ -38,8 +39,6 @@ export const BodyChangeLog = ({onComplete, cycleEntryId, session}: BodyChanges) 
         gutHealth: gutHealth || null,
         dietCravings: dietCravings || null,
       };
-  
-      console.log('Submitting body changes:', bodyChangeData);
   
       const response = await fetch('/api/body-changes', {
         method: 'POST',
@@ -54,6 +53,11 @@ export const BodyChangeLog = ({onComplete, cycleEntryId, session}: BodyChanges) 
       if (!response.ok) {
         throw new Error(data.error || data.details || 'Failed to submit body changes');
       }
+  
+      // Fetch user ID and update collective entries
+      const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`);
+      const userData = await userResponse.json();
+      await fetchCollectiveEntries(userData.id, setCycleEntries);
   
       toast.success('Body changes saved successfully');
       onComplete();

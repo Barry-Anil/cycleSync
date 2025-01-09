@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { fetchCollectiveEntries } from "@/lib/fetchCollectiveEntries";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,9 +10,10 @@ interface CognitiveAssessment {
   onComplete: () => void
   cycleEntryId?: any // Added to link with cycle entry
   session: any
+  setCycleEntries : (entries: any[]) => void;
 }
 
-export const CognitiveAssessment = ({ onComplete, cycleEntryId, session }: CognitiveAssessment) => {
+export const CognitiveAssessment = ({ onComplete, cycleEntryId, session, setCycleEntries }: CognitiveAssessment) => {
   const [focus, setFocus] = useState("");
   const [memory, setMemory] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,22 +24,20 @@ export const CognitiveAssessment = ({ onComplete, cycleEntryId, session }: Cogni
         toast.error('No cycle entry found. Please complete the daily log first.');
         return;
       }
-
+  
       if (!session?.user?.email) {
         toast.error('You must be logged in to save entries');
         return;
       }
-
+  
       setIsSubmitting(true);
-
+  
       const assessmentData = {
         cycleEntryId,
         focus: focus || null,
         memory: memory || null,
       };
-
-      console.log('Submitting cognitive assessment:', assessmentData);
-
+  
       const response = await fetch('/api/cognitive-assessment', {
         method: 'POST',
         headers: {
@@ -45,13 +45,18 @@ export const CognitiveAssessment = ({ onComplete, cycleEntryId, session }: Cogni
         },
         body: JSON.stringify(assessmentData),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
         throw new Error(data.error || data.details || 'Failed to submit cognitive assessment');
       }
-
+  
+      // Fetch user ID and update collective entries
+      const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`);
+      const userData = await userResponse.json();
+      await fetchCollectiveEntries(userData.id, setCycleEntries);
+  
       toast.success('Cognitive assessment saved successfully');
       onComplete();
     } catch (error) {

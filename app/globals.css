@@ -59,3 +59,18 @@
   }
 }
 
+@layer utilities {
+  .responsive-bg-size {
+    background-size: 150px 150px;
+  }
+  @screen sm {
+    .responsive-bg-size {
+      background-size: 200px 200px;
+    }
+  }
+  @screen lg {
+    .responsive-bg-size {
+      background-size: 250px 250px;
+    }
+  }
+}

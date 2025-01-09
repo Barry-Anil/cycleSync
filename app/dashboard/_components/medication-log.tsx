@@ -6,14 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { fetchCollectiveEntries } from "@/lib/fetchCollectiveEntries"
 
 interface MedicationLog {
   onComplete: () => void
   cycleEntryId?: any // Added to link with cycle entry
   session: any
+  setCycleEntries : (entries: any[]) => void;
 }
 
-export const MedicationLog = ({ onComplete, cycleEntryId, session }: MedicationLog) => {
+export const MedicationLog = ({ onComplete, cycleEntryId, session, setCycleEntries }: MedicationLog) => {
   const [medications, setMedications] = useState<string[]>([]);
   const [newMedication, setNewMedication] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,19 +33,19 @@ export const MedicationLog = ({ onComplete, cycleEntryId, session }: MedicationL
         toast.error("No cycle entry found. Please complete the daily log first.");
         return;
       }
-
+  
       if (!session?.user?.email) {
         toast.error("You must be logged in to save entries");
         return;
       }
-
+  
       if (medications.length === 0) {
         toast.error("Please add at least one medication before submitting");
         return;
       }
-
+  
       setIsSubmitting(true);
-
+  
       // Submit each medication individually
       const submissionPromises = medications.map(async (medicationName) => {
         const response = await fetch('/api/medications', {
@@ -56,17 +58,22 @@ export const MedicationLog = ({ onComplete, cycleEntryId, session }: MedicationL
             name: medicationName,
           }),
         });
-
+  
         if (!response.ok) {
           const data = await response.json();
           throw new Error(data.error || data.details || 'Failed to submit medication');
         }
-
+  
         return response.json();
       });
-
+  
       // Wait for all medications to be submitted
       await Promise.all(submissionPromises);
+  
+      // Fetch user ID and update collective entries
+      const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`);
+      const userData = await userResponse.json();
+      await fetchCollectiveEntries(userData.id, setCycleEntries);
       
       toast.success("Medications logged successfully");
       onComplete();
@@ -77,7 +84,6 @@ export const MedicationLog = ({ onComplete, cycleEntryId, session }: MedicationL
       setIsSubmitting(false);
     }
   };
-
 
   return (
     <>

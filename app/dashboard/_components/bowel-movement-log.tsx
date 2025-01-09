@@ -5,14 +5,16 @@ import { Label } from "@/components/ui/label" // Fixed import
 import { useState } from "react"
 import { useSession } from "next-auth/react" // Added for user authentication
 import { toast } from "sonner" // For error notifications
+import { fetchCollectiveEntries } from "@/lib/fetchCollectiveEntries"
 
 interface BowelMovementLogProps {
   onComplete: () => void
   cycleEntryId?: any // Added to link with cycle entry
   session: any
+  setCycleEntries : (entries: any[]) => void;
 }
 
-export const BowelMovementLog = ({ onComplete, cycleEntryId, session }: BowelMovementLogProps) => {
+export const BowelMovementLog = ({ onComplete, cycleEntryId, session, setCycleEntries }: BowelMovementLogProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const [frequency, setFrequency] = useState<number>(0)
   const [consistency, setConsistency] = useState("")
@@ -21,50 +23,48 @@ export const BowelMovementLog = ({ onComplete, cycleEntryId, session }: BowelMov
 
   const handleSubmit = async () => {
     if (!session?.user?.email) {
-      toast.error("You must be logged in to save entries")
-      return
+      toast.error("You must be logged in to save entries");
+      return;
     }
-    setIsLoading(true)
-
+    setIsLoading(true);
+  
     try {
-      const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`)
+      const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`);
       if (!userResponse.ok) {
-        throw new Error('Failed to fetch user information')
+        throw new Error('Failed to fetch user information');
       }
-      const userData = await userResponse.json()
-
+      const userData = await userResponse.json();
+  
       const payload = {
         userId: userData.id,
         cycleEntryId,
         frequency,
         consistency,
-      }
-      console.log('Submitting payload:', payload)
-
+      };
+  
       const response = await fetch('/api/bowel-movements', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
-      })
-      
+      });
       
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to submit bowel movement log')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit bowel movement log');
       }
-
-      const responseData = await response.json()
-
-      toast.success('Bowel movement log saved successfully')
-      onComplete()
+  
+      await fetchCollectiveEntries(userData.id, setCycleEntries);
+      
+      toast.success('Bowel movement log saved successfully');
+      onComplete();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to save bowel movement log')
+      toast.error(error instanceof Error ? error.message : 'Failed to save bowel movement log');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Card>
