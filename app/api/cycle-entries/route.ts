@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       id: uuidv4(),
       userId: body.userId,
       date: new Date(body.date).toISOString(), // Keep as Date object
-      endDate: new Date(body.endDate), // Keep as Date object
+      endDate: new Date(body.endDate).toISOString(), // Keep as Date object
       mood: body.mood || null,
       energy: typeof body.energy === 'number' ? body.energy : null,
       notes: body.notes || null,

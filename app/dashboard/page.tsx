@@ -30,7 +30,7 @@ import { BowelMovementLog } from "./_components/bowel-movement-log"
 import { CognitiveAssessment } from "./_components/cognitive-assessment"
 import { MedicationLog } from "./_components/medication-log"
 import { useSession } from "next-auth/react"
-import { Activity, Badge, Brain, CalendarDays, Pill } from "lucide-react"
+import { Activity, Badge, Brain, CalendarDays, Circle, Heart, Pill } from "lucide-react"
 
 interface BasicCycleEntry {
   id: string;
@@ -41,32 +41,70 @@ interface BasicCycleEntry {
   energy: number | null;
   notes: string | null;
 }
-
-interface CollectiveEntry extends BasicCycleEntry {
-  bodyChanges: {
-    skinCondition: string | null;
-    hairCondition: string | null;
-    gutHealth: string | null;
-    dietCravings: string | null;
-  } | null;
-  bowelMovements: {
-    frequency: number | null;
-    consistency: string | null;
-  } | null;
-  cognitiveAssessment: {
-    focus: string | null;
-    memory: string | null;
-  } | null;
-  medications: {
-    name: string;
-  }[];
+export interface BodyChange {
+  id: string;
+  cycleEntryId: string;
+  skinCondition: string | null;
+  hairCondition: string | null;
+  gutHealth: string | null;
+  dietCravings: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
+
+export interface BowelMovement {
+  id: string;
+  cycleEntryId: string;
+  frequency: number;       // how many times
+  consistency: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CognitiveAssessment {
+  id: string;
+  cycleEntryId: string;
+  focus: string | null;
+  memory: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Medication {
+  id: string;
+  cycleEntryId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CollectiveEntry {
+  id: string;
+  userId: string;
+  date: string;         // e.g. '2025-01-10'
+  endDate: string;      // or string | null
+  mood: string | null;  // e.g. 'happy', 'sad', 'anxious', 'irritable', etc.
+  energy: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  bodyChanges: BodyChange;
+  bowelMovements: BowelMovement;
+  cognitiveAssessment: CognitiveAssessment;
+  medications: Medication;
+}
+
 
 interface DailyLogForm {
   mood: string;
   energy: number;
   notes: string;
 }
+
+interface RecentEntriesProps {
+  entries: CollectiveEntry[];
+}
+
 
 const sections = [
   { id: "daily-log", title: "Daily Log", emoji: "📝" },
@@ -76,103 +114,7 @@ const sections = [
   { id: "medication", title: "Medication Log", emoji: "💊" },
 ] as const
 
-const RecentEntries = ({ entries }: { entries: CollectiveEntry[] }) => {
-  return (
-    <div className="space-y-4">
-      {entries.map((entry) => (
-        <div key={entry.id} className="bg-secondary p-4 rounded-lg space-y-3">
-          <div className="flex justify-between items-start">
-            <div>
-              <h4 className="font-semibold">
-                {new Date(entry.date).toLocaleDateString()}
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                End Date: {new Date(entry.endDate).toLocaleDateString()}
-              </p>
-            </div>
-            {entry.mood && (
-              <span className="text-lg">
-                {entry.mood === 'happy' ? '😊' : 
-                 entry.mood === 'sad' ? '😢' :
-                 entry.mood === 'anxious' ? '😰' :
-                 entry.mood === 'irritable' ? '😠' : '😐'}
-              </span>
-            )}
-          </div>
 
-          {entry.energy && (
-            <div>
-              <p className="text-sm font-medium">Energy Level: {entry.energy}/5</p>
-            </div>
-          )}
-
-          {entry.bodyChanges && (
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Body Changes:</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {entry.bodyChanges.skinCondition && (
-                  <p>Skin: {entry.bodyChanges.skinCondition}</p>
-                )}
-                {entry.bodyChanges.hairCondition && (
-                  <p>Hair: {entry.bodyChanges.hairCondition}</p>
-                )}
-                {entry.bodyChanges.gutHealth && (
-                  <p>Gut Health: {entry.bodyChanges.gutHealth}</p>
-                )}
-                {entry.bodyChanges.dietCravings && (
-                  <p>Cravings: {entry.bodyChanges.dietCravings}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {entry.bowelMovements && (
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Bowel Movements:</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <p>Frequency: {entry.bowelMovements.frequency}x/day</p>
-                <p>Consistency: {entry.bowelMovements.consistency}</p>
-              </div>
-            </div>
-          )}
-
-          {entry.cognitiveAssessment && (
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Cognitive Assessment:</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <p>Focus: {entry.cognitiveAssessment.focus}</p>
-                <p>Memory: {entry.cognitiveAssessment.memory}</p>
-              </div>
-            </div>
-          )}
-
-          {entry.medications && entry.medications.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Medications:</p>
-              <div className="flex flex-wrap gap-2">
-                {entry.medications.map((med, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 bg-primary/10 rounded-full text-xs"
-                  >
-                    {med.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {entry.notes && (
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Notes:</p>
-              <p className="text-sm">{entry.notes}</p>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-};
 
 
 export default function Dashboard() {
@@ -180,11 +122,17 @@ export default function Dashboard() {
   const { data: session } = useSession()
   const [isLoading, setIsLoading] = useState(false)
   const [startDate, setStartDate] = useState<Date>(new Date())
-  const [endDate, setEndDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() + 6)))
+  const [endDate, setEndDate] = useState<Date>(() => {
+    const end = new Date()
+    end.setDate(end.getDate() + 7)
+    return end
+  })
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [currentSection, setCurrentSection] = useState<typeof sections[number]["id"]>("daily-log")
   const [cycleEntries, setCycleEntries] = useState<CollectiveEntry[]>([])
-  const [userId, setUserId] = useState<number | null>(null)
-  
+  const [userId, setUserId] = useState<string | null>(null)
+  const [currentCycleData, setCurrentCycleData] = useState<CollectiveEntry | null>(null)
+
 
   const { register, handleSubmit, setValue, watch, reset } = useForm<DailyLogForm>({
     defaultValues: {
@@ -194,20 +142,78 @@ export default function Dashboard() {
     }
   })
 
-  const handleStartDateChange = (date: Date) => {
-    setStartDate(date)
-    setEndDate(new Date(new Date(date).setDate(date.getDate() + 6)))
-  }
 
+
+  const handleDateSelection = async (date: Date) => {
+    if (!userId) return;
+
+    try {
+      setIsLoading(true);
+      const formattedDate = date.toISOString().split("T")[0];
+
+      const response = await fetch(
+        `/api/cycle-entries/date/${formattedDate}?userId=${userId}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch cycle data: ${await response.text()}`);
+      }
+
+      const data = await response.json();
+
+      if (!data || !data.date) {
+        // No existing cycle entry for the selected date
+        setStartDate(date);
+        const newEndDate = new Date(date);
+        newEndDate.setDate(date.getDate() + 7);
+        setEndDate(newEndDate);
+        setSelectedDate(date);
+        setCurrentCycleData(null);
+        setCycleEntries([]); // Clear entries when no data is found
+
+        // Reset form
+        reset({
+          mood: "",
+          energy: 3,
+          notes: "",
+        });
+      } else if (data.date === formattedDate) {
+        // Valid cycle entry exists for the exact selected date
+        setStartDate(new Date(data.date));
+        setEndDate(new Date(data.endDate));
+        setSelectedDate(date);
+        setCurrentCycleData(data);
+        setCycleEntries(data); // Populate entries with current cycle data
+
+        // Populate form with existing data
+        reset({
+          mood: data.mood || "",
+          energy: data.energy || 3,
+          notes: data.notes || "",
+        });
+      } else {
+        // Handle any unexpected cases (if needed)
+        toast.error("Unexpected response for the selected date");
+        setCurrentCycleData(null);
+        setCycleEntries([]);
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to process date selection"
+      );
+      setCycleEntries([]); // Clear entries on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch user ID when session is available
   useEffect(() => {
     const fetchUserId = async () => {
       if (!session?.user?.email) return;
-      
       try {
         const userResponse = await fetch(`/api/users?email=${encodeURIComponent(session.user.email)}`);
-        if (!userResponse.ok) {
-          throw new Error('Failed to fetch user information');
-        }
+        if (!userResponse.ok) throw new Error('Failed to fetch user information');
         const userData = await userResponse.json();
         setUserId(userData.id);
       } catch (error) {
@@ -215,106 +221,224 @@ export default function Dashboard() {
         toast.error('Failed to load user information');
       }
     };
-
     fetchUserId();
   }, [session?.user?.email]);
 
- const RecentEntries = ({ entries }: { entries: CollectiveEntry[] }) => {
-    return (
-      <div 
-        className="min-h-screen p-6 space-y-4 responsive-bg-size"
-        style={{
-          backgroundColor: '#ffd6e6',
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M15 20c0 5.523-4.477 10-10 10S-5 25.523-5 20 -0.523 10 5 10s10 4.477 10 10zm70 0c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10 10 4.477 10 10zM15 90c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10 10 4.477 10 10zm70 0c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10 10 4.477 10 10zM35 50c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10 10 4.477 10 10zm30 0c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10 10 4.477 10 10zM35 20c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10 10 4.477 10 10zm30 0c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10 10 4.477 10 10zM35 90c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10 10 4.477 10 10zm30 0c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10 10 4.477 10 10z' fill='%23ff9ec3' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+  const RecentEntries: React.FC<RecentEntriesProps> = ({ entries }) => {
+    if (!entries || entries.length === 0) {
+      return (
+        <div
+          className="min-h-screen p-6 space-y-4 responsive-bg-size"
+          style={{
+            backgroundColor: "#ffd6e6",
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' ... %3E%3C/svg%3E")`,
           }}
+        >
+          <div className="max-w-2xl mx-auto">
+            <Card className="p-6 bg-white/90 backdrop-blur-sm border-pink-200">
+              <div className="text-center py-8">
+                <CalendarDays className="w-12 h-12 mx-auto text-pink-300 mb-4" />
+                <h3 className="text-lg font-semibold text-pink-700 mb-2">
+                  No Entries Found
+                </h3>
+                <p className="text-sm text-pink-600/70">
+                  There are no entries for the selected date. Start tracking your
+                  cycle by adding a new entry.
+                </p>
+              </div>
+            </Card>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="p-6 space-y-4 responsive-bg-size"
+        style={{
+          backgroundColor: "#ffd6e6",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' ... %3E%3C/svg%3E")`,
+        }}
       >
         <div className="max-w-2xl mx-auto space-y-4">
-          {entries.map((entry) => (
-            <Card 
-              key={entry.id} 
+          {entries.map((entry, i) => (
+            /* The key goes on the top-level element we return in .map(...) */
+            <Card
+              key={i}
               className="p-6 bg-white/90 backdrop-blur-sm hover:shadow-md transition-shadow border-pink-200"
             >
               <div className="space-y-4">
-                {/* Header with Date and Mood */}
+                {/* Header Section */}
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-semibold text-pink-700">
                       <CalendarDays className="inline-block w-4 h-4 mr-2" />
-                      Start Date:{new Date(entry.date).toLocaleDateString()}
+                      Start Date: {new Date(entry.date).toLocaleDateString()}
                     </h4>
                     <p className="text-sm text-pink-600/70">
-                    <CalendarDays className="inline-block w-4 h-4 mr-2" />
+                      <CalendarDays className="inline-block w-4 h-4 mr-2" />
                       End Date: {new Date(entry.endDate).toLocaleDateString()}
                     </p>
                   </div>
                   {entry.mood && (
-                    <span className="text-2xl" role="img" aria-label={`Mood: ${entry.mood}`}>
-                      {entry.mood === 'happy' ? '😊' : 
-                       entry.mood === 'sad' ? '😢' :
-                       entry.mood === 'anxious' ? '😰' :
-                       entry.mood === 'irritable' ? '😠' : '😐'}
+                    <span
+                      className="text-2xl"
+                      role="img"
+                      aria-label={`Mood: ${entry.mood}`}
+                    >
+                      {entry.mood === "happy"
+                        ? "😊"
+                        : entry.mood === "sad"
+                          ? "😢"
+                          : entry.mood === "anxious"
+                            ? "😰"
+                            : entry.mood === "irritable"
+                              ? "😠"
+                              : "😐"}
                     </span>
                   )}
                 </div>
-  
+
                 {/* Energy Level */}
-                {entry.energy && (
+                {entry.energy != null && (
                   <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-pink-600" />
                     <div className="flex gap-1">
                       {[...Array(5)].map((_, i) => (
+                        // It's safe to use `i` here because it's a short, fixed array
                         <div
                           key={i}
-                          className={`w-4 h-4 rounded-full ${
-                            i < entry.energy! ? 'bg-pink-500' : 'bg-pink-100'
-                          }`}
+                          className={`w-4 h-4 rounded-full ${i < entry.energy! ? "bg-pink-500" : "bg-pink-100"
+                            }`}
                         />
                       ))}
                     </div>
                   </div>
                 )}
-  
-                {/* Body Changes */}
-                {entry.bodyChanges && (
-                  <div className="rounded-lg bg-pink-50/80 p-3 space-y-2">
-                    <p className="text-sm font-medium flex items-center gap-2 text-pink-700">
-                      <Brain className="w-4 h-4 text-pink-600" />
-                      Body Changes:
-                    </p>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      {Object.entries(entry.bodyChanges).map(([key, value]) => (
-                        value && (
-                          <div key={key} className="flex items-start gap-2">
-                            <span className="capitalize text-pink-700">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                            <span className="text-pink-600/70">{value}</span>
-                          </div>
-                        )
-                      ))}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+
+                  {/* Body Changes */}
+                  {entry.bodyChanges && (
+                    <div className="rounded-lg bg-pink-50/80 p-3 space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2 text-pink-700">
+                        <Heart className="w-4 h-4 text-pink-600" />
+                        Body Changes:
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div key={i} className="space-y-1">
+                          {entry?.bodyChanges?.skinCondition && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-pink-700">Skin:</span>
+                              <span className="text-pink-600/70 capitalize">
+                                {entry.bodyChanges.skinCondition}
+                              </span>
+                            </div>
+                          )}
+                          {entry.bodyChanges.hairCondition && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-pink-700">Hair:</span>
+                              <span className="text-pink-600/70 capitalize">
+                                {entry.bodyChanges.hairCondition}
+                              </span>
+                            </div>
+                          )}
+                          {entry.bodyChanges.gutHealth && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-pink-700">Gut Health:</span>
+                              <span className="text-pink-600/70 capitalize">
+                                {entry.bodyChanges.gutHealth}
+                              </span>
+                            </div>
+                          )}
+                          {entry.bodyChanges.dietCravings && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-pink-700">Cravings:</span>
+                              <span className="text-pink-600/70">
+                                {entry.bodyChanges.dietCravings}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
                     </div>
-                  </div>
-                )}
-  
-                {/* Medications */}
-                {entry.medications && entry.medications.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium flex items-center gap-2 text-pink-700">
-                      <Pill className="w-4 h-4 text-pink-600" />
-                      Medications:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {entry.medications.map((med, index) => (
-                        <Badge 
-                          key={index} 
+                  )}
+
+                  {/* Bowel Movements */}
+                  {entry.bowelMovements && (
+                    <div className="rounded-lg bg-pink-50/80 p-3 space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2 text-pink-700">
+                        <Circle className="w-4 h-4 text-pink-600" />
+                        Bowel Movements:
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+
+                        <div key={i} className="space-y-1">
+                          <div className="flex items-start gap-2">
+                            <span className="text-pink-700">Frequency:</span>
+                            <span className="text-pink-600/70">
+                              {entry?.bowelMovements.frequency} times
+                            </span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-pink-700">Consistency:</span>
+                            <span className="text-pink-600/70 capitalize">
+                              {entry?.bowelMovements.consistency}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cognitive Assessments */}
+                  {entry.cognitiveAssessment && (
+                    <div className="rounded-lg bg-pink-50/80 p-3 space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2 text-pink-700">
+                        <Brain className="w-4 h-4 text-pink-600" />
+                        Cognitive Assessment:
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div key={i} className="space-y-1">
+                          <div className="flex items-start gap-2">
+                            <span className="text-pink-700">Focus:</span>
+                            <span className="text-pink-600/70 capitalize">
+                              {entry?.cognitiveAssessment.focus}
+                            </span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-pink-700">Memory:</span>
+                            <span className="text-pink-600/70 capitalize">
+                              {entry?.cognitiveAssessment.memory}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Medications */}
+                  {entry.medications && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2 text-pink-700">
+                        <Pill className="w-4 h-4 text-pink-600" />
+                        Medications:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          key={i}
                           className="bg-pink-100 text-pink-700 hover:bg-pink-200"
                         >
-                          {med.name}
+                          {entry.medications.name}
                         </Badge>
-                      ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-  
-                {/* Notes */}
+                  )}
+                </div>
+
+                {/* Notes Section */}
                 {entry.notes && (
                   <div className="border-t border-pink-100 pt-3 mt-3">
                     <p className="text-sm whitespace-pre-wrap text-pink-600/70">
@@ -327,12 +451,11 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
-    )
-  }
+    );
+  };
 
 
-
-  // Add this useEffect to fetch entries when the component mounts
+  // Fetch all entries on component mount
   useEffect(() => {
     const fetchEntries = async () => {
       if (!userId) return;
@@ -340,37 +463,10 @@ export default function Dashboard() {
       try {
         setIsLoading(true);
         const response = await fetch(`/api/collective-entries?userId=${userId}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch entries');
-        }
+        if (!response.ok) throw new Error('Failed to fetch entries');
 
         const entries = await response.json();
-
-        if (!Array.isArray(entries)) {
-          throw new Error('Entries response is not an array');
-        }
-
-        // Transform the entries to ensure they match the CollectiveEntry interface
-        const collectedEntries: CollectiveEntry[] = entries.map(entry => ({
-          id: entry.id,
-          userId: entry.userId,
-          date: entry.date,
-          endDate: entry.endDate,
-          mood: entry.mood,
-          energy: entry.energy,
-          notes: entry.notes,
-          bodyChanges: entry.bodyChanges || null,
-          bowelMovements: entry.bowelMovements || null,
-          cognitiveAssessment: entry.cognitiveAssessment || null,
-          medications: entry.medications || []
-        }));
-
-        setCycleEntries(collectedEntries);
-
-        if (collectedEntries.length === 0) {
-          toast("No entries found yet. Start by adding your first entry!");
-        }
+        setCycleEntries(entries);
       } catch (error) {
         console.error('Error fetching entries:', error);
         toast.error('Failed to load entries');
@@ -382,58 +478,71 @@ export default function Dashboard() {
     fetchEntries();
   }, [userId]);
 
-  console.log(cycleEntries[0]?.id, "cycleEntries")
+
+  console.log(cycleEntries, "cycleEntries")
 
   const onSubmit = async (formData: DailyLogForm) => {
-    try {
-      if (!userId) {
-        toast.error('User ID not found');
-        return;
-      }
+    if (!userId) {
+      toast.error("User ID not found");
+      return;
+    }
 
+    try {
       setIsLoading(true);
 
       const entryData = {
         userId,
-        date: startDate.toISOString(),
+        date: startDate.toISOString().split("T")[0],
         endDate: endDate.toISOString(),
         mood: formData.mood || null,
         energy: formData.energy || null,
         notes: formData.notes || null,
       };
 
-      const response = await fetch('/api/cycle-entries', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Decide method and URL dynamically
+      const method = currentCycleData ? "PUT" : "POST";
+      const url = currentCycleData
+        ? `/api/cycle-entries/${currentCycleData.id}`
+        : "/api/cycle-entries";
+
+      // Make the API call
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(entryData),
       });
 
-      const responseData = await response.json();
-      
       if (!response.ok) {
-        throw new Error(responseData.error || responseData.details || 'Failed to save entry');
+        const errorDetails = await response.text();
+        throw new Error(`Failed to save entry: ${errorDetails}`);
       }
 
-      // Fetch the updated collective entries after saving
-      const updatedEntriesResponse = await fetch(`/api/collective-entries?userId=${userId}`);
-      if (!updatedEntriesResponse.ok) {
-        throw new Error('Failed to fetch updated entries');
-      }
-      const updatedEntries = await updatedEntriesResponse.json();
-      setCycleEntries(updatedEntries);
+      const updatedData = await response.json();
+      setCurrentCycleData(updatedData);
 
-      toast.success('Entry saved successfully');
+      // Fetch all entries to update the list
+      const entriesResponse = await fetch(
+        `/api/collective-entries?userId=${userId}`
+      );
+      if (entriesResponse.ok) {
+        const entries = await entriesResponse.json();
+        setCycleEntries(entries);
+      } else {
+        setCycleEntries([]); // Ensure it's an empty array if fetching fails
+      }
+
+      toast.success("Entry saved successfully");
       nextSection();
-
     } catch (error) {
-      console.error('Error saving entry:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save entry');
+      console.error("Error saving entry:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save entry"
+      );
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const nextSection = () => {
     const currentIndex = sections.findIndex(section => section.id === currentSection)
@@ -496,7 +605,7 @@ export default function Dashboard() {
 
   const renderSection = () => {
     const latestEntryId = cycleEntries[0]?.id;
-    
+
     switch (currentSection) {
       case "daily-log":
         return renderDailyLog();
@@ -505,9 +614,9 @@ export default function Dashboard() {
       case "bowel-movement":
         return <BowelMovementLog onComplete={nextSection} cycleEntryId={latestEntryId} session={session} setCycleEntries={setCycleEntries} />
       case "cognitive":
-        return <CognitiveAssessment onComplete={nextSection} cycleEntryId={latestEntryId} session={session}  setCycleEntries={setCycleEntries}/>;
+        return <CognitiveAssessment onComplete={nextSection} cycleEntryId={latestEntryId} session={session} setCycleEntries={setCycleEntries} />;
       case "medication":
-        return <MedicationLog onComplete={nextSection} cycleEntryId={latestEntryId} session={session}  setCycleEntries={setCycleEntries} />;
+        return <MedicationLog onComplete={nextSection} cycleEntryId={latestEntryId} session={session} setCycleEntries={setCycleEntries} />;
     }
   }
 
@@ -526,7 +635,7 @@ export default function Dashboard() {
               <Calendar
                 mode="single"
                 selected={startDate}
-                onSelect={(date: any) => date && handleStartDateChange(date)}
+                onSelect={(date: any) => date && handleDateSelection(date)}
                 className="rounded-md border"
               />
             </div>

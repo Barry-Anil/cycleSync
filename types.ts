@@ -1,7 +1,7 @@
 export interface CollectiveEntry {
     id: string;
     date: string;
-    endDate: Date;
+    endDate: string;
     mood: string | null;
     energy: number | null;
     notes: string | null;
@@ -23,3 +23,5 @@ export interface CollectiveEntry {
       name: string;
     }[];
   }
+
+  
