@@ -1,21 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { 
+import {
   cycleEntries,
   bodyChanges,
   bowelMovements,
   cognitiveAssessments,
-  medications 
+  medications,
 } from "@/db/schema";
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { date: string } }
 ) {
   try {
-    const url = new URL(request.url);
-    const userId = url.searchParams.get("userId");
+    // Extract the userId from the query string
+    const { searchParams } = request.nextUrl;
+    const userId = searchParams.get("userId");
+    
+    // Get `date` from the dynamic route parameter
     const date = params.date;
 
     if (!userId || !date) {
@@ -36,17 +39,18 @@ export async function GET(
     const formattedDate = parsedDate.toISOString().split("T")[0];
 
     const entry = await db.query.cycleEntries.findFirst({
-        where: and(
-          eq(cycleEntries.userId, userId),
-          sql`${cycleEntries.date} <= ${formattedDate} AND ${cycleEntries.endDate} >= ${formattedDate}`
-        ),
-        with: {
-          bodyChanges: true,
-          bowelMovements: true,
-          cognitiveAssessments: true,
-          medications: true,
-        },
-      });
+      where: and(
+        eq(cycleEntries.userId, userId),
+        sql`${cycleEntries.date} <= ${formattedDate} 
+             AND ${cycleEntries.endDate} >= ${formattedDate}`
+      ),
+      with: {
+        bodyChanges: true,
+        bowelMovements: true,
+        cognitiveAssessments: true,
+        medications: true,
+      },
+    });
 
     // If no entry found, return an empty response
     if (!entry) {
@@ -62,7 +66,11 @@ export async function GET(
     });
 
     return NextResponse.json(
-      { error: `Internal Server Error: ${error instanceof Error ? error.message : "Unknown error"}` },
+      {
+        error: `Internal Server Error: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      },
       { status: 500 }
     );
   }
