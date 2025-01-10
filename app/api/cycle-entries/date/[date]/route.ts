@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -9,27 +9,37 @@ import {
   medications,
 } from "@/db/schema";
 
-export default async function GET(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+type Props = {
+  params: {
+    date: string;
+  };
+};
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ date: string }> }
+) {
   try {
     // Extract the userId from the query string
-    const userId = req.query.userId as string;
+    const { searchParams } = request.nextUrl;
+    const userId = searchParams.get("userId");
+    
     // Get date from dynamic route parameter
-    const date = req.query.date as string;
+    const date = (await params).date;
 
     if (!userId || !date) {
-      return res.status(400).json({ error: "Missing required parameters" });
+      return NextResponse.json(
+        { error: "Missing required parameters" },
+        { status: 400 }
+      );
     }
 
     const parsedDate = new Date(date);
     if (isNaN(parsedDate.getTime())) {
-      return res.status(400).json({ error: "Invalid date format" });
+      return NextResponse.json(
+        { error: "Invalid date format" },
+        { status: 400 }
+      );
     }
 
     const formattedDate = parsedDate.toISOString().split("T")[0];
@@ -50,10 +60,10 @@ export default async function GET(
 
     // If no entry found, return an empty response
     if (!entry) {
-      return res.json({});
+      return NextResponse.json({});
     }
 
-    return res.json(entry);
+    return NextResponse.json(entry);
   } catch (error) {
     console.error("Error in cycle-entries/date/[date] route:", {
       error,
@@ -61,10 +71,13 @@ export default async function GET(
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return res.status(500).json({
-      error: `Internal Server Error: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    });
+    return NextResponse.json(
+      {
+        error: `Internal Server Error: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      },
+      { status: 500 }
+    );
   }
 }
