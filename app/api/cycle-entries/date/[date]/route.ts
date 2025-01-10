@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -9,35 +9,27 @@ import {
   medications,
 } from "@/db/schema";
 
-interface RouteParams {
-  params: {
-    date: string;
-  };
-  searchParams?: { [key: string]: string | string[] | undefined };
-}
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-export async function GET(request: NextRequest, context: RouteParams) {
   try {
     // Extract the userId from the query string
-    const { searchParams } = request.nextUrl;
-    const userId = searchParams.get("userId");
-    
-    // Get `date` from the dynamic route parameter
-    const date = context.params.date;
+    const userId = req.query.userId as string;
+    // Get date from dynamic route parameter
+    const date = req.query.date as string;
 
     if (!userId || !date) {
-      return NextResponse.json(
-        { error: "Missing required parameters" },
-        { status: 400 }
-      );
+      return res.status(400).json({ error: "Missing required parameters" });
     }
 
     const parsedDate = new Date(date);
     if (isNaN(parsedDate.getTime())) {
-      return NextResponse.json(
-        { error: "Invalid date format" },
-        { status: 400 }
-      );
+      return res.status(400).json({ error: "Invalid date format" });
     }
 
     const formattedDate = parsedDate.toISOString().split("T")[0];
@@ -58,10 +50,10 @@ export async function GET(request: NextRequest, context: RouteParams) {
 
     // If no entry found, return an empty response
     if (!entry) {
-      return NextResponse.json({});
+      return res.json({});
     }
 
-    return NextResponse.json(entry);
+    return res.json(entry);
   } catch (error) {
     console.error("Error in cycle-entries/date/[date] route:", {
       error,
@@ -69,13 +61,10 @@ export async function GET(request: NextRequest, context: RouteParams) {
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return NextResponse.json(
-      {
-        error: `Internal Server Error: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      },
-      { status: 500 }
-    );
+    return res.status(500).json({
+      error: `Internal Server Error: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    });
   }
 }
