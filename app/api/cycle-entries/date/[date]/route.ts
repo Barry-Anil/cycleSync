@@ -9,7 +9,7 @@ import {
   medications,
 } from "@/db/schema";
 
-export default async function handler(
+export default async function GET(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
