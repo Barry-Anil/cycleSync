@@ -9,17 +9,21 @@ import {
   medications,
 } from "@/db/schema";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { date: string } }
-) {
+interface RouteParams {
+  params: {
+    date: string;
+  };
+  searchParams?: { [key: string]: string | string[] | undefined };
+}
+
+export async function GET(request: NextRequest, context: RouteParams) {
   try {
     // Extract the userId from the query string
     const { searchParams } = request.nextUrl;
     const userId = searchParams.get("userId");
     
     // Get `date` from the dynamic route parameter
-    const date = params.date;
+    const date = context.params.date;
 
     if (!userId || !date) {
       return NextResponse.json(
